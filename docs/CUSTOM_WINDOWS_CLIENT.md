@@ -183,7 +183,17 @@ Do:
 
 ```powershell
 cargo clean -p scrap
-cargo update -p bindgen --precise 0.59.2
+cargo clean
+cargo build --release --target x86_64-pc-windows-msvc
+```
+
+### Error: `bindgen-0.59.x ... LexError { span: Span }`
+
+You have an old/incompatible bindgen in lock/cache.
+
+```powershell
+cargo update -p bindgen --precise 0.65.1
+cargo clean
 cargo build --release --target x86_64-pc-windows-msvc
 ```
 
