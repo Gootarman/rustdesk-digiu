@@ -1,33 +1,87 @@
-# Build-time embedded server config for a normal Windows binary
+# Build-time embedded server config (Windows, normal `rustdesk.exe`)
 
-If you do not want filename-based config (rename `*.exe`), you can embed server values at **build time**.
-The resulting file can stay a regular name like `rustdesk.exe`.
+This guide shows how to build a **regular Windows binary** (no filename rename trick) with embedded server settings.
 
-## What to use
+---
 
-Set these environment variables **before build**:
+## 1) Install dependencies on Windows
+
+### 1.1 Required tools
+
+Install the following:
+
+- **Git**
+- **Rust toolchain** (rustup + cargo)
+- **Visual Studio 2022 Build Tools** with C++ workload:
+  - `MSVC v143`
+  - `Windows 10/11 SDK`
+  - `C++ CMake tools`
+- **CMake**
+- **Ninja**
+- **vcpkg**
+
+Example with `winget` (PowerShell as Administrator):
+
+```powershell
+winget install --id Git.Git -e
+winget install --id Rustlang.Rustup -e
+winget install --id Kitware.CMake -e
+winget install --id Ninja-build.Ninja -e
+winget install --id Microsoft.VisualStudio.2022.BuildTools -e
+```
+
+> During Visual Studio Build Tools installation, ensure C++ build components are selected.
+
+### 1.2 Install vcpkg libraries used by RustDesk
+
+```powershell
+git clone https://github.com/microsoft/vcpkg C:\vcpkg
+C:\vcpkg\bootstrap-vcpkg.bat
+$env:VCPKG_ROOT = "C:\vcpkg"
+C:\vcpkg\vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+```
+
+### 1.3 (Sciter desktop UI) Download `sciter.dll`
+
+If you build desktop sciter client, place `sciter.dll` near resulting `rustdesk.exe`:
+
+- https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll
+
+---
+
+## 2) Get source code correctly
+
+```powershell
+git clone <YOUR_FORK_OR_REPO_URL> rustdesk-digiu
+cd rustdesk-digiu
+git submodule update --init --recursive
+```
+
+Submodules are required (for example `libs/hbb_common`).
+
+---
+
+## 3) Embed your server values at build time
+
+Set variables before `cargo build`:
 
 - `RUSTDESK_EMBEDDED_HOST` (required)
-- `RUSTDESK_EMBEDDED_KEY` (optional, but recommended)
+- `RUSTDESK_EMBEDDED_KEY` (optional, recommended)
 - `RUSTDESK_EMBEDDED_RELAY` (optional)
 - `RUSTDESK_EMBEDDED_API` (optional)
 
-When embedded values are present, app startup forces these options:
-
-- `custom-rendezvous-server`
-- `key`
-- `relay-server`
-- `api-server`
-
-## Your values
+### Your values
 
 - Host: `46.161.48.167`
 - Key: `Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8=`
 - Relay: `46.161.48.167`
 
-## Windows build example (PowerShell)
+---
+
+## 4) Build command (PowerShell)
 
 ```powershell
+$env:VCPKG_ROOT = "C:\vcpkg"
 $env:RUSTDESK_EMBEDDED_HOST = "46.161.48.167"
 $env:RUSTDESK_EMBEDDED_KEY = "Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8="
 $env:RUSTDESK_EMBEDDED_RELAY = "46.161.48.167"
@@ -37,16 +91,33 @@ $env:RUSTDESK_EMBEDDED_RELAY = "46.161.48.167"
 cargo build --release --target x86_64-pc-windows-msvc
 ```
 
-Output binary remains a normal filename (for example):
+Result:
 
 ```text
 target\x86_64-pc-windows-msvc\release\rustdesk.exe
 ```
 
-No rename step is required.
+This is a normal binary name; no rename is needed.
 
-## Notes
+---
 
-- If you change server values, rebuild the binary.
-- This removes easy filename tampering, but secrets in client binaries are still extractable by a determined attacker.
-- For highest security, keep server-side ACL/device authorization enabled.
+## 5) Install / deploy
+
+- Copy `rustdesk.exe` to endpoint.
+- If using sciter desktop build, copy `sciter.dll` next to `rustdesk.exe`.
+- Run installer/runtime as usual.
+
+At startup, embedded values are applied to:
+
+- `custom-rendezvous-server`
+- `key`
+- `relay-server`
+- `api-server`
+
+---
+
+## 6) Security notes
+
+- This is safer operationally than filename-based config.
+- But secrets can still be extracted from client binaries by a determined reverse engineer.
+- For production, enforce server-side ACL/device authorization policies.
