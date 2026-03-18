@@ -1565,6 +1565,7 @@ if exist \"{tmp_path}\\{app_name} Tray.lnk\" del /f /q \"{tmp_path}\\{app_name} 
         Config::set_option("key".into(), lic.key);
         Config::set_option("custom-rendezvous-server".into(), lic.host);
         Config::set_option("api-server".into(), lic.api);
+        Config::set_option("relay-server".into(), lic.relay);
     }
 
     let tray_shortcuts = if config::is_outgoing_only() {
