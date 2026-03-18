@@ -163,6 +163,18 @@ git submodule update --init --recursive
 - Ensure `VCPKG_ROOT` points to your vcpkg path.
 - Ensure `vcpkg install ...:x64-windows-static` was completed.
 
+### Error: `no field ... available field is _address` (vpx/aom structs)
+
+This usually means bindgen generated broken/opaque bindings.
+
+Do:
+
+```powershell
+cargo clean -p scrap
+cargo update -p bindgen --precise 0.59.2
+cargo build --release --target x86_64-pc-windows-msvc
+```
+
 ---
 
 ## 8) Security notes
