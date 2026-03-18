@@ -1783,9 +1783,12 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    apply_embedded_server_config();
+
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
+        apply_embedded_server_config();
         return;
     }
     let Some(path) = std::env::current_exe().map_or(None, |x| x.parent().map(|x| x.to_path_buf()))
@@ -1801,6 +1804,35 @@ pub fn load_custom_client() {
             return;
         };
         read_custom_client(&data.trim());
+    }
+    apply_embedded_server_config();
+}
+
+fn apply_embedded_server_config() {
+    const EMBEDDED_HOST: Option<&str> = option_env!("RUSTDESK_EMBEDDED_HOST");
+    const EMBEDDED_KEY: Option<&str> = option_env!("RUSTDESK_EMBEDDED_KEY");
+    const EMBEDDED_RELAY: Option<&str> = option_env!("RUSTDESK_EMBEDDED_RELAY");
+    const EMBEDDED_API: Option<&str> = option_env!("RUSTDESK_EMBEDDED_API");
+
+    let host = EMBEDDED_HOST.unwrap_or("").trim();
+    if host.is_empty() {
+        return;
+    }
+    set_option("custom-rendezvous-server".into(), host.to_owned());
+
+    let key = EMBEDDED_KEY.unwrap_or("").trim();
+    if !key.is_empty() {
+        set_option("key".into(), key.to_owned());
+    }
+
+    let relay = EMBEDDED_RELAY.unwrap_or("").trim();
+    if !relay.is_empty() {
+        set_option("relay-server".into(), relay.to_owned());
+    }
+
+    let api = EMBEDDED_API.unwrap_or("").trim();
+    if !api.is_empty() {
+        set_option("api-server".into(), api.to_owned());
     }
 }
 

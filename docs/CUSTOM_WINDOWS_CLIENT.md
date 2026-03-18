@@ -1,71 +1,52 @@
-# Custom Windows client (.exe) with preconfigured ID/Relay server
+# Build-time embedded server config for a normal Windows binary
 
-This repository supports **auto-configuration from executable filename**.
-On startup/install, the app parses `host=`, `key=`, `relay=` from the `.exe` name.
+If you do not want filename-based config (rename `*.exe`), you can embed server values at **build time**.
+The resulting file can stay a regular name like `rustdesk.exe`.
 
-## Where to put your server data
+## What to use
 
-You do **not** edit source code for this.
-You put your values **inside the executable filename**:
+Set these environment variables **before build**:
 
-```text
-rustdesk-host=<HOST>,key=<KEY>,relay=<RELAY>.exe
-```
+- `RUSTDESK_EMBEDDED_HOST` (required)
+- `RUSTDESK_EMBEDDED_KEY` (optional, but recommended)
+- `RUSTDESK_EMBEDDED_RELAY` (optional)
+- `RUSTDESK_EMBEDDED_API` (optional)
 
-For your case:
+When embedded values are present, app startup forces these options:
 
-```text
-rustdesk-host=46.161.48.167,key=Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8=,relay=46.161.48.167.exe
-```
+- `custom-rendezvous-server`
+- `key`
+- `relay-server`
+- `api-server`
 
-## Exact Windows steps (no coding)
+## Your values
 
-1. Build/download your `rustdesk.exe`.
-2. Put `rustdesk.exe` in any folder, for example `C:\build\`.
-3. Open PowerShell in that folder.
-4. Run:
+- Host: `46.161.48.167`
+- Key: `Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8=`
+- Relay: `46.161.48.167`
 
-```powershell
-Rename-Item .\rustdesk.exe "rustdesk-host=46.161.48.167,key=Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8=,relay=46.161.48.167.exe"
-```
-
-5. Distribute/run this renamed `.exe` on client PCs.
-6. During run/install, RustDesk reads values from the filename and applies:
-   - `custom-rendezvous-server = 46.161.48.167`
-   - `key = Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8=`
-   - `relay-server = 46.161.48.167`
-
-## If rename did not help
-
-Most common reason: RustDesk was installed earlier and old settings are already saved.
-
-Use one of these fixes:
-
-1. **Clean reinstall** (recommended): uninstall RustDesk, install again from renamed `.exe`.
-2. **Force apply config on installed client (Admin CMD/PowerShell):**
+## Windows build example (PowerShell)
 
 ```powershell
-"C:\Program Files\RustDesk\rustdesk.exe" --config "rustdesk-host=46.161.48.167,key=Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8=,relay=46.161.48.167.exe"
+$env:RUSTDESK_EMBEDDED_HOST = "46.161.48.167"
+$env:RUSTDESK_EMBEDDED_KEY = "Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8="
+$env:RUSTDESK_EMBEDDED_RELAY = "46.161.48.167"
+# optional:
+# $env:RUSTDESK_EMBEDDED_API = "https://your-api-host"
+
+cargo build --release --target x86_64-pc-windows-msvc
 ```
 
-After that, restart RustDesk service/app.
+Output binary remains a normal filename (for example):
 
-## Optional: use the helper binary in this repo
-
-If you want to generate the name from parameters instead of typing manually:
-
-```bash
-cargo run --release --bin naming -- \
-  "Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8=" \
-  "46.161.48.167" \
-  "" \
-  "46.161.48.167"
+```text
+target\x86_64-pc-windows-msvc\release\rustdesk.exe
 ```
 
-The command prints a custom `.exe` filename; rename your built client to that name.
+No rename step is required.
 
 ## Notes
 
-- Keep commas exactly as shown.
-- `relay=` may be the same as `host=`.
-- If host/key changes, rebuild/rename a new `.exe`.
+- If you change server values, rebuild the binary.
+- This removes easy filename tampering, but secrets in client binaries are still extractable by a determined attacker.
+- For highest security, keep server-side ACL/device authorization enabled.
