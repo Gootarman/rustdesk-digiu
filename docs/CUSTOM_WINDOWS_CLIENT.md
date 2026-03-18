@@ -175,6 +175,20 @@ git submodule update --init --recursive
 - Ensure `VCPKG_ROOT` points to your vcpkg path.
 - Ensure `vcpkg install ...:x64-windows-static` was completed.
 
+### Error: `Unsupported nasm: multipass optimization not supported` (AOM)
+
+This repo now has an overlay patch in `res/vcpkg/aom/portfile.cmake`:
+- when NASM 3.x is detected on Windows x64, AOM build falls back to `-DAOM_TARGET_CPU=generic`.
+
+After pulling latest changes, run:
+
+```powershell
+git pull
+Remove-Item -Recurse -Force "$env:VCPKG_ROOT\\buildtrees\\aom" -ErrorAction SilentlyContinue
+cargo clean
+cargo build --release --target x86_64-pc-windows-msvc
+```
+
 ### Error: `no field ... available field is _address` (vpx/aom structs)
 
 This usually means bindgen generated broken/opaque bindings.
