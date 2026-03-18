@@ -73,6 +73,18 @@ Use helper script from this repo:
 .\scripts\windows-build-env.ps1 -VcpkgRoot "C:\vcpkg" -LlvmRoot "C:\Program Files\LLVM"
 ```
 
+If PowerShell blocks scripts (`PSSecurityException` / execution policy):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows-build-env.ps1 -VcpkgRoot "C:\vcpkg" -LlvmRoot "C:\Program Files\LLVM"
+```
+
+Or use the CMD version (no PowerShell policy dependency):
+
+```cmd
+scripts\windows-build-env.cmd C:\vcpkg "C:\Program Files\LLVM"
+```
+
 It sets:
 
 - `VCPKG_ROOT`
