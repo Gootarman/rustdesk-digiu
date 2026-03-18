@@ -179,13 +179,22 @@ git submodule update --init --recursive
 
 This repo now has an overlay patch in `res/vcpkg/aom/portfile.cmake`:
 - when NASM 3.x is detected on Windows x64, AOM build falls back to `-DAOM_TARGET_CPU=generic`.
+- additionally, NASM is disabled for AOM in this case (`-DENABLE_NASM=0`).
 
 After pulling latest changes, run:
 
 ```powershell
 git pull
 Remove-Item -Recurse -Force "$env:VCPKG_ROOT\\buildtrees\\aom" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "$env:VCPKG_ROOT\\packages\\aom_*" -ErrorAction SilentlyContinue
 cargo clean
+cargo build --release --target x86_64-pc-windows-msvc
+```
+
+If AOM still fails, use the known fallback AOM version 3.9.1 for this build:
+
+```powershell
+$env:USE_AOM_391 = "1"
 cargo build --release --target x86_64-pc-windows-msvc
 ```
 
