@@ -19,6 +19,7 @@ Install the following:
 - **CMake**
 - **Ninja**
 - **vcpkg**
+- **LLVM/Clang** (for `libclang.dll`, required by `bindgen`)
 
 Example with `winget` (PowerShell as Administrator):
 
@@ -28,6 +29,7 @@ winget install --id Rustlang.Rustup -e
 winget install --id Kitware.CMake -e
 winget install --id Ninja-build.Ninja -e
 winget install --id Microsoft.VisualStudio.2022.BuildTools -e
+winget install --id LLVM.LLVM -e
 ```
 
 > During Visual Studio Build Tools installation, ensure C++ build components are selected.
@@ -61,7 +63,31 @@ Submodules are required (for example `libs/hbb_common`).
 
 ---
 
-## 3) Embed your server values at build time
+## 3) Configure build environment (IMPORTANT)
+
+The error `Unable to find libclang` means `LIBCLANG_PATH` is not set correctly.
+
+Use helper script from this repo:
+
+```powershell
+.\scripts\windows-build-env.ps1 -VcpkgRoot "C:\vcpkg" -LlvmRoot "C:\Program Files\LLVM"
+```
+
+It sets:
+
+- `VCPKG_ROOT`
+- `LIBCLANG_PATH`
+
+If you prefer manual setup:
+
+```powershell
+$env:VCPKG_ROOT = "C:\vcpkg"
+$env:LIBCLANG_PATH = "C:\Program Files\LLVM\bin"
+```
+
+---
+
+## 4) Embed your server values at build time
 
 Set variables before `cargo build`:
 
@@ -78,10 +104,9 @@ Set variables before `cargo build`:
 
 ---
 
-## 4) Build command (PowerShell)
+## 5) Build command (PowerShell)
 
 ```powershell
-$env:VCPKG_ROOT = "C:\vcpkg"
 $env:RUSTDESK_EMBEDDED_HOST = "46.161.48.167"
 $env:RUSTDESK_EMBEDDED_KEY = "Jdp+UM06CmQdA5MxgoUNadJFqjYMtLw48FFccZnTyJ8="
 $env:RUSTDESK_EMBEDDED_RELAY = "46.161.48.167"
@@ -101,7 +126,7 @@ This is a normal binary name; no rename is needed.
 
 ---
 
-## 5) Install / deploy
+## 6) Install / deploy
 
 - Copy `rustdesk.exe` to endpoint.
 - If using sciter desktop build, copy `sciter.dll` next to `rustdesk.exe`.
@@ -116,7 +141,31 @@ At startup, embedded values are applied to:
 
 ---
 
-## 6) Security notes
+## 7) Troubleshooting
+
+### Error: `Unable to find libclang`
+
+- Install LLVM: `winget install --id LLVM.LLVM -e`
+- Set: `$env:LIBCLANG_PATH="C:\Program Files\LLVM\bin"`
+- Verify file exists: `Test-Path "C:\Program Files\LLVM\bin\libclang.dll"`
+
+### Error: missing `hbb_common` / submodule files
+
+Run:
+
+```powershell
+git submodule sync --recursive
+git submodule update --init --recursive
+```
+
+### Error: opus/vcpkg include/link issues
+
+- Ensure `VCPKG_ROOT` points to your vcpkg path.
+- Ensure `vcpkg install ...:x64-windows-static` was completed.
+
+---
+
+## 8) Security notes
 
 - This is safer operationally than filename-based config.
 - But secrets can still be extracted from client binaries by a determined reverse engineer.
