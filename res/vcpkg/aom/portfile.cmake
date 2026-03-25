@@ -32,6 +32,7 @@ else()
 endif()
 
 set(aom_target_cpu "")
+set(aom_extra_options "")
 if(VCPKG_TARGET_IS_UWP OR (VCPKG_TARGET_IS_WINDOWS AND VCPKG_TARGET_ARCHITECTURE MATCHES "^arm"))
     # UWP + aom's assembler files result in weirdness and build failures
     # Also, disable assembly on ARM and ARM64 Windows to fix compilation issues.
@@ -42,10 +43,26 @@ if(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm" AND VCPKG_TARGET_IS_LINUX)
   set(aom_target_cpu "-DENABLE_NEON=OFF")
 endif()
 
+if(VCPKG_TARGET_IS_WINDOWS AND VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
+    execute_process(
+        COMMAND ${NASM} -v
+        OUTPUT_VARIABLE NASM_VERSION_TEXT
+        ERROR_VARIABLE NASM_VERSION_TEXT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE
+    )
+    if(NASM_VERSION_TEXT MATCHES "NASM version 3\\.")
+        message(WARNING "Detected NASM 3.x (${NASM_VERSION_TEXT}). Falling back to generic AOM target to avoid unsupported multipass optimization error.")
+        set(aom_target_cpu "-DAOM_TARGET_CPU=generic")
+        list(APPEND aom_extra_options "-DENABLE_NASM=0")
+    endif()
+endif()
+
 vcpkg_cmake_configure(
     SOURCE_PATH ${SOURCE_PATH}
     OPTIONS
         ${aom_target_cpu}
+        ${aom_extra_options}
         -DENABLE_DOCS=OFF
         -DENABLE_EXAMPLES=OFF
         -DENABLE_TESTDATA=OFF

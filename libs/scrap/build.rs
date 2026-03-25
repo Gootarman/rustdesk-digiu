@@ -144,6 +144,7 @@ fn generate_bindings(
     exact_file: &Path,
     regex: &str,
 ) {
+    let target = env::var("TARGET").unwrap_or_default();
     let mut b = bindgen::builder()
         .header(ffi_header.to_str().unwrap())
         .allowlist_type(regex)
@@ -153,6 +154,10 @@ fn generate_bindings(
         .trust_clang_mangling(false)
         .layout_tests(false) // breaks 32/64-bit compat
         .generate_comments(false); // comments have prefix /*!\
+
+    if !target.is_empty() {
+        b = b.clang_arg(format!("--target={target}"));
+    }
 
     for dir in include_paths {
         b = b.clang_arg(format!("-I{}", dir.display()));
